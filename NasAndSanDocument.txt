@@ -1,0 +1,82 @@
+Set Ip in Storgage to access it in a pirticular network:
+
+# press Alt+F2 to go to terminal and then -
+    lgoin name : root
+    password : password
+
+1. Go network scripts directory-
+    cd /etc/sysconfig/network-scripts/
+    nano ifcfg-eth0
+
+# First check the ip address which you are assigning is not assigned to another host.
+# change ip address e.g.
+
+    IPADDR=192.168.1.245  #Change TO 
+    IPADDR=172.17.0.82
+    GATEWAY=172.17.0.1
+
+2. After save it restart network -
+    service network restart
+
+3. Check LAN connection is properly working or not -
+    ethtool eth0
+
+4. Go to blue grey screen -
+# press Alt+F1 and then -
+    Select IpConf then select NIC-1 # Becuase we have set ip on eth0;
+
+5. Go to another host and open browser then enter ip of storage(172.17.0.82) -
+    User Name : itxadmin
+    Password : password 
+
+==================NAS Volume==================
+
+1. To install NFS client package -
+    apt-get install nfs-common 
+
+2. mount nfs share -
+    mount 172.17.0.82:/Access.Share/<share_name>    /mntpoint 
+
+3. edit /etc/fstab -
+    172.17.0.82:/Access.Share/<share name>		</mnt pnt>	nfs	auto	0  0
+    172.17.0.82:/Access.Share/production /home/sparkuser/Documents/productionnas  nfs auto  0 0
+
+4. To know histroy of pirticular word which we have already used in terminal, type following command:
+    history | egrep "iscsi" 
+
+==================SAN Volume==================
+
+1. Ensure iSCSI package is installed -
+    apt-get open-iscsi
+
+2. discover iSCSI target -
+    iscsiadm -m discovery -t st -p 172.17.0.82
+
+3. Select Target from list displayed to Login -
+# To know target name -
+    ll -lth /dev/disk/by-path/ | egrep "ami"
+
+# Use it in following command -
+    iscsiadm -m node -T iqn.1991-10.com.ami:itx002590efdcccd133:sparkstorage -p 172.17.0.82 --login
+
+4. When you create a new volume and you want to mount it in you machine then first you have to make a file system to format its data because in starting it is in raw form. This command must be run only once for a new SAN Volume -
+    mkfs.ext4 /dev/sd* # Add leter at place of * .
+
+5. To know uuid  -
+    ls -lth /dev/disk/by-uuid/
+
+6. To automatic mount SAN volume after restart pc, set the path of SAN mount in /etc/fstab -
+   nano /etc/fstab
+
+# Write following line in /etc/fstab/
+# SAN volume persistent
+# Use uuid in following command:
+    UUID=cb4e752b-65af-495b-a735-e4d068eceb76   /home/sparkuser/Documents/SAN	ext4	_netdev	0	0
+
+7. To manually mount -
+    mount /dev/sd(a,b,c,....) SANTest/   #SANTest is folder name on your machine
+
+8. To Logout -
+#first, check if SAN voulume is unmounted.
+    iscsiadm -m node -T iqn.1991-10.com.ami:itx002590efdcccd133:sparkstorage -p 172.17.0.82 --logout
+
